@@ -1,0 +1,35 @@
+name: Android CI
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Toolchain info
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools" || true
+          java -version 2>&1
+      - name: Latest versions on Google Maven
+        run: |
+          for p in com/android/tools/build/gradle androidx/compose/compose-bom androidx/activity/activity-compose \
+                   androidx/navigation/navigation-compose androidx/lifecycle/lifecycle-runtime-compose \
+                   androidx/datastore/datastore-preferences androidx/core/core-ktx androidx/compose/material3/material3 \
+                   androidx/compose/material/material-icons-extended; do
+            echo "== $p"
+            curl -s "https://dl.google.com/dl/android/maven2/$p/maven-metadata.xml" | grep -oE '<version>[^<]+' | sed 's/<version>//' | tail -25 | tr '\n' ' '
+            echo
+          done
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --list 2>/dev/null | grep -E 'platforms;android-|build-tools;' | awk '{print $1}' | sort -u | tail -25
+      - name: Real mcstatus.io sample responses (gzip+base64)
+        run: |
+          for a in java/demo.mcstatus.io java/mc.hypixel.net java/play.cubecraft.net java/2b2t.org java/mc.example.com \
+                   java/play.wynncraft.com bedrock/demo.mcstatus.io bedrock/geo.hivebedrock.network bedrock/play.cubecraft.net \
+                   bedrock/mc.example.com; do
+            echo "=====BEGIN $a"
+            curl -s --max-time 40 -H 'User-Agent: ServerScope-fixtures/1.0' "https://api.mcstatus.io/v2/status/$a" | gzip -9 | base64 -w 800
+            echo "=====END $a"
+          done
