@@ -21,9 +21,11 @@ done
 adb logcat -d -v brief '*:E' > "$OUT/api$API-logcat-errors.txt" || true
 ls -l "$OUT"
 
-if grep -q "FATAL EXCEPTION" "$OUT/api$API-logcat-errors.txt"; then
-  echo "::error::The app crashed during the smoke test"
-  grep -A 30 "FATAL EXCEPTION" "$OUT/api$API-logcat-errors.txt"
+# Only crashes of ServerScope itself count (shell commands like `svc` can log their own).
+if grep -q "Process: $PKG," "$OUT/api$API-logcat-errors.txt" \
+  || grep -q "Process crashed" "$OUT/api$API-instrumentation.txt"; then
+  echo "::error::ServerScope crashed during the smoke test"
+  grep -B 2 -A 30 "Process: $PKG," "$OUT/api$API-logcat-errors.txt"
   exit 1
 fi
 grep -q "^OK (" "$OUT/api$API-instrumentation.txt" || { echo "::error::Smoke test failed"; exit 1; }

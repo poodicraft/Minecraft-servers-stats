@@ -12,6 +12,22 @@ only permission it asks for is **Internet**.
   latest CI build on the [Releases page](../../releases) (look for the `debug-…` pre-release).
 - Runs on Android 7.0 (API 24) and newer, phones and tablets.
 
+## Screenshots
+
+Captured by the emulator smoke test (`.github/workflows/ui-smoke.yml`) against live servers.
+
+| Home with a favorite | Java server | Player card |
+| --- | --- | --- |
+| <img src="docs/screenshots/home.png" width="240" alt="Home screen"> | <img src="docs/screenshots/java-result.png" width="240" alt="Java server result"> | <img src="docs/screenshots/player-card.png" width="240" alt="Player detail card"> |
+
+| Plugins, mods and network | Bedrock server | Offline server |
+| --- | --- | --- |
+| <img src="docs/screenshots/plugins-network.png" width="240" alt="Plugins, mods and network details"> | <img src="docs/screenshots/bedrock-result.png" width="240" alt="Bedrock server result"> | <img src="docs/screenshots/offline.png" width="240" alt="Offline server"> |
+
+On tablets the result cards flow into columns:
+
+<img src="docs/screenshots/tablet.png" width="720" alt="Tablet layout">
+
 ## Features
 
 - **Check any server.** Type an IP or domain (an optional `:port` is fine), choose Java or
@@ -108,8 +124,9 @@ environment variable to `%LOCALAPPDATA%\Android\Sdk`, and run the same `sdkmanag
 from `cmdline-tools\latest\bin`. Instead of `ANDROID_HOME` you can also create
 `local.properties` in the project root containing `sdk.dir=/path/to/Android/Sdk`.
 
-Gradle itself doesn't need installing: the wrapper (`./gradlew`) downloads the right version
-(9.7.1). The build uses Android Gradle Plugin 9.4, Kotlin 2.4 and Compose BOM 2026.09.
+Once the licenses are accepted, the build downloads any other SDK package it's missing by
+itself. Gradle doesn't need installing either: the wrapper (`./gradlew`) fetches the right
+version (9.7.1). The build uses Android Gradle Plugin 9.4, Kotlin 2.4 and Compose BOM 2026.09.
 
 ### Build the debug APK
 
@@ -173,9 +190,25 @@ build before installing your release build.
 
 ## Continuous integration
 
-`.github/workflows/android.yml` runs on every push: unit tests, debug and release builds, a
-check of the APK's permissions and SDK levels, then it uploads the debug APK as a workflow
-artifact and publishes it as a `debug-<branch>` pre-release.
+Two GitHub Actions workflows run on every push:
+
+- **Android CI** (`.github/workflows/android.yml`) runs the unit tests and the debug and
+  release builds, and prints the APK's permissions and SDK levels. It then uploads the debug
+  APK as a workflow artifact and publishes it as a `debug-<branch>` pre-release.
+- **UI smoke test** (`.github/workflows/ui-smoke.yml`) installs the app on Android 7.0
+  (API 24) and Android 15 (API 35) emulators. `SmokeTest` in `app/src/androidTest` then walks
+  through the app against live servers:
+  - a Java server and its player card
+  - favorites
+  - a Bedrock server
+  - an offline server
+  - an invalid address
+  - no network
+  - a tablet-sized screen
+
+  The run fails if ServerScope crashes. Screenshots of every step are published as a
+  `smoke-<branch>` pre-release. To run it yourself with an emulator or phone connected:
+  `./gradlew assembleDebug assembleDebugAndroidTest && bash tools/run_smoke_test.sh`.
 
 ## Project layout
 
@@ -194,7 +227,10 @@ app/src/main/java/io/github/poodicraft/serverscope/
     ├── result/        Result screen, auto-refresh, player detail sheet
     ├── components/    Pixel-style cards, meters, badges, images
     └── theme/         Colors, typography, shapes
-tools/make_icons.py    Regenerates the pixel-art launcher icon and drawables
+app/src/test/           JVM unit tests + real API fixtures
+app/src/androidTest/    Emulator smoke test (SmokeTest.kt)
+tools/make_icons.py     Regenerates the pixel-art launcher icon and drawables
+tools/run_smoke_test.sh Runs the smoke test on a connected device and pulls screenshots
 ```
 
 ## Credits
