@@ -52,13 +52,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="debug-${GITHUB_REF_NAME//\//-}"
-          gh release delete "$TAG" --yes --cleanup-tag || true
-          gh release create "$TAG" ServerScope-debug.apk \
-            --prerelease \
-            --target "$GITHUB_SHA" \
-            --title "ServerScope debug build ($GITHUB_REF_NAME)" \
-            --notes "Debug APK built by GitHub Actions from ${GITHUB_SHA}. Install it on Android 7.0+ (see README)."
+          bash tools/publish_prerelease.sh "debug-${GITHUB_REF_NAME//\//-}" \
+            "ServerScope debug build ($GITHUB_REF_NAME)" \
+            "Debug APK built by GitHub Actions from ${GITHUB_SHA}. Install it on Android 7.0+ (see README)." \
+            ServerScope-debug.apk
 
       - name: Upload test reports
         if: failure()
